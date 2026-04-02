@@ -5,7 +5,9 @@ import org.example.productregister.dtos.response.ProductResponse;
 import org.example.productregister.exceptions.InvalidArgumentsException;
 import org.example.productregister.exceptions.NotFoundException;
 import org.example.productregister.model.Product;
+import org.example.productregister.model.User;
 import org.example.productregister.repository.ProductRepository;
+import org.example.productregister.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -14,33 +16,46 @@ public class ProductService {
 
     private  final ProductRepository productRepository;
 
-    public ProductService(ProductRepository productRepository){
+    private final UserRepository userRepository;
+
+    public ProductService(ProductRepository productRepository, UserRepository userRepository){
         this.productRepository = productRepository;
+        this.userRepository = userRepository;
     }
 
     private ProductResponse toResponse(Product product){
         return new ProductResponse(product);
     }
 
-    public ProductResponse includeProduct(ProductRequest request){
-         Product newProduct = new Product(
+    public ProductResponse includeProduct(ProductRequest request, Long userId){
+        User user =  userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User Not found"));
+
+
+        Product newProduct = new Product(
                  request.getName(),
                  request.getPrice(),
                  request.getQuantity(),
                  request.getCategory()
          );
 
+        newProduct.setUser(user);
           productRepository.save(newProduct);
           return toResponse(newProduct);
     }
 
-    public List<Product> listProducts(){
 
-        if (productRepository.findAll().isEmpty()){
+    public List<ProductResponse> listProducts(Long userId){
+            List<Product> products = productRepository.findByUser_Id(userId);
+
+
+        if (products.isEmpty()){
             throw new NotFoundException("Your List is Empty");
         }
 
-        return productRepository.findAll();
+        return  products.stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     public List<ProductResponse> listProductsByCategory(String category) {
@@ -75,13 +90,19 @@ public class ProductService {
 
     }
 
-    public void deleteProduct(Long id){
-        if(id == null){
+    public void deleteProduct(Long userId, Long productId){
+
+        if(productId == null){
             throw new InvalidArgumentsException("ID cannot be null");
         }
 
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(("Product Not Found with id: " + id)));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not Found"));
+
+
+        Product product = productRepository.findByIdAndUserId(productId, userId)
+                .orElseThrow(() -> new NotFoundException(("Product Not Found with id: " + productId)));
+
         productRepository.delete(product);
     }
 

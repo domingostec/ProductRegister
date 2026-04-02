@@ -23,17 +23,17 @@ public class ProductController {
     }
 
     @Operation(summary = "Inclui o objeto produto", description = "retorna um objeto response que posteriormente será um product")
-    @PostMapping("/include")
+    @PostMapping("/users/{userId}")
     public ResponseEntity<ProductResponse> includeProduct(
-            @Valid  @RequestBody ProductRequest request){
-        ProductResponse response = productService.includeProduct(request);
+            @Valid  @RequestBody ProductRequest request,  @PathVariable Long userId){
+        ProductResponse response = productService.includeProduct(request, userId);
 
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/products")
-    public ResponseEntity<?> listAllProducts(){
-        List<Product> products = productService.listProducts();
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> listAllProducts(@Valid @PathVariable Long userId){
+        List<ProductResponse> products = productService.listProducts(userId);
 
         return ResponseEntity.ok(products);
     }
@@ -53,9 +53,10 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable  Long id){
-        productService.deleteProduct(id);
+    @DeleteMapping("user/{userId}/product/{productId}")
+    public ResponseEntity<Void> deleteProduct( @Valid @PathVariable  Long userId,
+                                              @Valid @PathVariable Long productId){
+        productService.deleteProduct(userId, productId);
 
         return ResponseEntity.noContent().build();
     }
