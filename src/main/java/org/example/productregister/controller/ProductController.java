@@ -22,42 +22,42 @@ public class ProductController {
         this.productService = productService;
     }
 
-    @Operation(summary = "Inclui o objeto produto", description = "retorna um objeto response que posteriormente será um product")
-    @PostMapping("/users/{userId}")
+    @Operation(summary = "Inclui o objeto produto", description = "Retorna um objeto response que posteriormente será um product")
+    @PostMapping("/user/{userId}")
     public ResponseEntity<ProductResponse> includeProduct(
-            @Valid  @RequestBody ProductRequest request,  @PathVariable Long userId){
+            @Valid @RequestBody ProductRequest request, @PathVariable Long userId) {
         ProductResponse response = productService.includeProduct(request, userId);
-
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<?> listAllProducts(@Valid @PathVariable Long userId){
+    public ResponseEntity<List<ProductResponse>> listAllProducts(@PathVariable Long userId) {
         List<ProductResponse> products = productService.listProducts(userId);
-
         return ResponseEntity.ok(products);
     }
 
-    @GetMapping("/{category}")
-    public List<ProductResponse> listProductsByGenre(
-            @Parameter(description = "Requer uma String referente a categoria do obj como parametro", example = "/eletronics")
-            @Valid @PathVariable String category){
-            return productService.listProductsByCategory(category);
+    @GetMapping("/user/{userId}/category/{category}")
+    public ResponseEntity<List<ProductResponse>> listProductsByCategory(
+            @Parameter(description = "Categoria do produto", example = "electronics")
+            @PathVariable String category,
+            @PathVariable Long userId) {
+        List<ProductResponse> products = productService.listProductsByCategory(category, userId);
+        return ResponseEntity.ok(products);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ProductResponse> updateProcut(@PathVariable Long id,
-                                                @RequestBody ProductRequest request){
-
-        ProductResponse response = productService.updateProduct(id, request);
+    @PutMapping("/user/{userId}/product/{productId}")
+    public ResponseEntity<ProductResponse> updateProduct(
+            @PathVariable Long productId,
+            @Valid @RequestBody ProductRequest request,
+            @PathVariable Long userId) {
+        ProductResponse response = productService.updateProduct(userId, productId, request);
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("user/{userId}/product/{productId}")
-    public ResponseEntity<Void> deleteProduct( @Valid @PathVariable  Long userId,
-                                              @Valid @PathVariable Long productId){
+    @DeleteMapping("/user/{userId}/product/{productId}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long userId,
+                                              @PathVariable Long productId) {
         productService.deleteProduct(userId, productId);
-
         return ResponseEntity.noContent().build();
     }
 }

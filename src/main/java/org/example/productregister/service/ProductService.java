@@ -15,12 +15,11 @@ import java.util.List;
 public class ProductService {
 
     private  final ProductRepository productRepository;
+    private final ValidationService validationService;
 
-    private final UserRepository userRepository;
-
-    public ProductService(ProductRepository productRepository, UserRepository userRepository){
+    public ProductService(ProductRepository productRepository,ValidationService validationService){
         this.productRepository = productRepository;
-        this.userRepository = userRepository;
+        this.validationService = validationService;
     }
 
     private ProductResponse toResponse(Product product){
@@ -28,9 +27,7 @@ public class ProductService {
     }
 
     public ProductResponse includeProduct(ProductRequest request, Long userId){
-        User user =  userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User Not found"));
-
+        User user =  validationService.validateUser(userId);
 
         Product newProduct = new Product(
                  request.getName(),
@@ -48,38 +45,24 @@ public class ProductService {
     public List<ProductResponse> listProducts(Long userId){
             List<Product> products = productRepository.findByUser_Id(userId);
 
-
-        if (products.isEmpty()){
-            throw new NotFoundException("Your List is Empty");
-        }
-
         return  products.stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public List<ProductResponse> listProductsByCategory(String category) {
+    public List<ProductResponse> listProductsByCategory(String category, Long userId) {
 
-        if (category == null || category.isBlank()) {
-            throw new NotFoundException("To filter, the field cannot be empty.");
-        }
-
-        List<Product> products = productRepository.findByCategoryIgnoreCase(category).stream()
-                .filter(p -> p.getCategory().equalsIgnoreCase(category))
-                .toList();
-
-        if (products.isEmpty()) {
-            throw new NotFoundException("No Products found for category " + category);
-        }
+        List<Product> products = productRepository.findByCategoryIgnoreCaseAndUser_Id(category, userId);
 
         return products.stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public ProductResponse updateProduct(Long id,ProductRequest request){
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Product Not Found"));
+    public ProductResponse updateProduct(Long userId, Long productId,ProductRequest request){
+
+        User user = validationService.validateUser(userId);
+        Product product = validationService.validateProduct(productId, userId);
 
         if (request.getName() != null) product.setName(request.getName());
         if (request.getPrice() != null) product.setPrice(request.getPrice());
@@ -92,16 +75,7 @@ public class ProductService {
 
     public void deleteProduct(Long userId, Long productId){
 
-        if(productId == null){
-            throw new InvalidArgumentsException("ID cannot be null");
-        }
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not Found"));
-
-
-        Product product = productRepository.findByIdAndUserId(productId, userId)
-                .orElseThrow(() -> new NotFoundException(("Product Not Found with id: " + productId)));
+        Product product = validationService.validateProduct(productId, userId);
 
         productRepository.delete(product);
     }
